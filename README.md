@@ -1,2 +1,2 @@
 # homebridge-lutron
-Lutron plugin for Homebridge
+Homebridge plugin for Lutron platform

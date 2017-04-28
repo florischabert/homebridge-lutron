@@ -1,0 +1,27 @@
+{
+  "name": "homebridge-lutron",
+  "version": "0.0.1",
+  "description": "Homebridge plugin for Lutron platform",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/florischabert/homebridge-lutron.git"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "lutron",
+    "radiora"
+  ],
+  "author": "florischabert",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/florischabert/homebridge-lutron/issues"
+  },
+  "engines": {
+    "node": ">=6.4.0",
+    "homebridge": ">=0.4.0"
+  },
+  "homepage": "https://github.com/florischabert/homebridge-lutron#readme",
+  "dependencies": {
+  }
+}
