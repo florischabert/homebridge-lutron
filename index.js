@@ -83,7 +83,7 @@ class LightAccessory {
     this.api = api;
     this.lutron = lutron;
     config = config || {};
-    this.name = config.name || 'Light';
+    this.name = config.name || `Light ${config.id}`;
     this.id = config.id
 
     this.brightness = 0
@@ -138,7 +138,7 @@ class ShadeAccessory {
     this.api = api;
     this.lutron = lutron;
     config = config || {};
-    this.name = config.name_motion || 'Shade';
+    this.name = config.name || `Shade ${config.id}`;
     this.id = config.id
 
     this.currentPosition = 0;
