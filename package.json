@@ -23,5 +23,6 @@
   },
   "homepage": "https://github.com/florischabert/homebridge-lutron#readme",
   "dependencies": {
+    "serialport": ">=4.0.0"
   }
 }

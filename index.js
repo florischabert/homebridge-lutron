@@ -12,6 +12,43 @@ module.exports = (homebridge) => {
   homebridge.registerPlatform('homebridge-lutron', 'Lutron', LutronPlatform, true);
 };
 
+class LutronSerial {
+  constructor(port, log) {
+    let SerialPort = require('serialport');
+    let serial = new SerialPort(port, {
+      baudrate: 9600,
+      parser: SerialPort.parsers.readline("\n")
+    });
+    this.serial = serial
+    this.states = {};
+		  
+    serial.on('open', () => {
+      log(`Opened ${port}`)
+    });
+
+    serial.on('data', (data) => {
+      let split = data.toString('ascii').split(',');
+      if (split.length != 4)
+        return;
+      if (split[0] !== '~OUTPUT' || split[2] !== '1')
+        return;
+      let id = parseInt(split[1]);
+      let level = parseInt(split[3]);
+      this.states[id] = level;
+      log(`Lutron device with id ${id} set to ${level}`);
+    });
+  }
+
+  setOutput(id, value) {
+    this.serial.write(`#OUTPUT,${id},1,${value}\r\n`);
+  }
+
+  getOutput(id) {
+    //this.serial.write(`?OUTPUT,${id}\r\n`);
+  }
+
+}
+
 class LutronPlatform {
   constructor(log, config, api) {
     if (!config) return;
@@ -23,11 +60,13 @@ class LutronPlatform {
     this.name = config.name || 'Lutron';
     this.platformAccessories = [];
 
+    this.lutron = new LutronSerial(config.port, log);
+
     for (let accessory of config.accessories) {
       if (accessory.type == 'light')
-        this.platformAccessories.push(new LightAccessory(log, accessory, api))
+        this.platformAccessories.push(new LightAccessory(log, accessory, api, this.lutron))
       else if (accessory.type == 'shade')
-        this.platformAccessories.push(new ShadeAccessory(log, accessory, api))
+        this.platformAccessories.push(new ShadeAccessory(log, accessory, api, this.lutron))
       else
         log('Unsupported accessory', config);
     }
@@ -39,15 +78,18 @@ class LutronPlatform {
 }
 
 class LightAccessory {
-  constructor(log, config, api) {
+  constructor(log, config, api, lutron) {
     this.log = log;
     this.api = api;
+    this.lutron = lutron;
     config = config || {};
     this.name = config.name || 'Light';
     this.id = config.id
 
-    this.lastOnBrigthness = 100
     this.brightness = 0
+    this.lastOnBrigthness = 100
+
+    this.lutron.getOutput(this.id)
   }
 
   getPowerOn(cb) {
@@ -62,6 +104,7 @@ class LightAccessory {
       this.lastOnBrigthness = this.brightness > 0 ? this.brightness : 100
       this.brightness = 0
     }
+    this.lutron.setOutput(this.id, this.brightness);
     cb()
   }
 
@@ -71,6 +114,7 @@ class LightAccessory {
 
   setBrightness(value, cb) {
     this.brightness = value
+    this.lutron.setOutput(this.id, this.brightness);
     cb()
   }
 
@@ -89,14 +133,17 @@ class LightAccessory {
 }
 
 class ShadeAccessory {
-  constructor(log, config, api) {
+  constructor(log, config, api, lutron) {
     this.log = log;
     this.api = api;
+    this.lutron = lutron;
     config = config || {};
     this.name = config.name_motion || 'Shade';
+    this.id = config.id
 
     this.currentPosition = 0;
     this.targetPosition = 0;
+    this.lutron.getOutput(this.id)
   }
 
   getCurrentPosition(cb) {
@@ -112,6 +159,7 @@ class ShadeAccessory {
     this.service.setCharacteristic(Characteristic.PositionState, Characteristic.PositionState.STOPPED);
     this.currentPosition = value;
     this.service.setCharacteristic(Characteristic.CurrentPosition, value);
+    this.lutron.setOutput(this.id, this.targetPosition);
     cb();
   }
 
