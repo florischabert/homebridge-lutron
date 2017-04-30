@@ -13,14 +13,14 @@ module.exports = (homebridge) => {
 };
 
 class LutronSerial {
-  constructor(port, log) {
+  constructor(port, platform, log) {
     let SerialPort = require('serialport');
     let serial = new SerialPort(port, {
       baudrate: 9600,
       parser: SerialPort.parsers.readline("\n")
     });
-    this.serial = serial
-    this.states = {};
+    this.platform = platform;
+    this.serial = serial;
 		  
     serial.on('open', () => {
       log(`Opened ${port}`)
@@ -34,8 +34,12 @@ class LutronSerial {
         return;
       let id = parseInt(split[1]);
       let level = parseInt(split[3]);
-      this.states[id] = level;
-      log(`Lutron device with id ${id} set to ${level}`);
+
+      let accessory = this.platform.accessoryForId[id]
+      if (accessory) {
+        log(`Lutron device ${id} set to ${level}`);
+        accessory.setLevel(level);
+      }
     });
   }
 
@@ -44,7 +48,7 @@ class LutronSerial {
   }
 
   getOutput(id) {
-    //this.serial.write(`?OUTPUT,${id}\r\n`);
+    this.serial.write(`?OUTPUT,${id}\r\n`);
   }
 
 }
@@ -59,16 +63,23 @@ class LutronPlatform {
     this.config = config;
     this.name = config.name || 'Lutron';
     this.platformAccessories = [];
+    this.accessoryForId = {};
 
-    this.lutron = new LutronSerial(config.port, log);
+    this.lutron = new LutronSerial(config.port, this, log);
 
     for (let accessory of config.accessories) {
+      let newAccessory = null;
       if (accessory.type == 'light')
-        this.platformAccessories.push(new LightAccessory(log, accessory, api, this.lutron))
+        newAccessory = new LightAccessory(log, accessory, api, this.lutron);
       else if (accessory.type == 'shade')
-        this.platformAccessories.push(new ShadeAccessory(log, accessory, api, this.lutron))
+        newAccessory = new ShadeAccessory(log, accessory, api, this.lutron);
       else
         log('Unsupported accessory', config);
+
+      if (newAccessory) {
+        this.accessoryForId[newAccessory.id] = newAccessory;
+        this.platformAccessories.push(newAccessory);
+      }
     }
   }
 
@@ -118,6 +129,15 @@ class LightAccessory {
     cb()
   }
 
+  setLevel(value) {
+    this.service
+      .setCharacteristic(Characteristic.Brightness, value);
+    if (value == 0 || value == 100) {
+      this.service
+        .setCharacteristic(Characteristic.On, value === 100);
+    }
+  }
+
   getServices() {
     let service = new Service.Lightbulb(this.name);
     service
@@ -128,6 +148,7 @@ class LightAccessory {
       .getCharacteristic(Characteristic.Brightness)
       .on('get', this.getBrightness.bind(this))
       .on('set', this.setBrightness.bind(this));
+    this.service = service;
     return [service];
   }
 }
@@ -171,6 +192,11 @@ class ShadeAccessory {
       state = Characteristic.PositionState.DECREASING;
 
     cb(null, state);
+  }
+
+  setLevel(value) {
+    this.service
+      .setCharacteristic(Characteristic.currentPosition, value);
   }
 
   getServices() {
