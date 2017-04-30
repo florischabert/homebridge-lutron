@@ -21,10 +21,15 @@ class LutronSerial {
     });
     this.platform = platform;
     this.serial = serial;
+    this.queue = []
 		  
-    serial.open();
-    while(!serial.isOpen())
-      ;
+    serial.on('open', () => {
+      log(`Opened ${port}`)
+      while (this.queue.length > 0) {
+        let fun = this.queue.shift();
+        fun();
+      }
+    });
 
     serial.on('data', (data) => {
       let split = data.toString('ascii').split(',');
@@ -44,11 +49,19 @@ class LutronSerial {
   }
 
   setOutput(id, value) {
-    this.serial.write(`#OUTPUT,${id},1,${value}\r\n`);
+    let fun = () => this.serial.write(`#OUTPUT,${id},1,${value}\r\n`);
+    if (this.serial.isOpen())
+      fun();
+    else
+      this.queue.push(fun);    
   }
 
   getOutput(id) {
-    this.serial.write(`?OUTPUT,${id}\r\n`);
+    let fun = () => this.serial.write(`?OUTPUT,${id}\r\n`);
+    if (this.serial.isOpen())
+      fun();
+    else
+      this.queue.push(fun);    
   }
 
 }
