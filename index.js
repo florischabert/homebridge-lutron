@@ -117,6 +117,7 @@ class LightAccessory {
   }
 
   getPowerOn(cb) {
+    log(`Lutron device ${this.id} on is ${this.brightness != 0}`);    
     cb(null, this.brightness != 0)
   }
 
@@ -133,6 +134,7 @@ class LightAccessory {
   }
 
   getBrightness(cb) {
+    log(`Lutron device ${this.id} brightness is ${this.brightness}`);    
     cb(null, this.brightness)
   }
 
@@ -143,11 +145,12 @@ class LightAccessory {
   }
 
   setLevel(value) {
+    this.brightness = value;
     this.service
       .setCharacteristic(Characteristic.Brightness, value);
     if (value == 0 || value == 100) {
       this.service
-        .setCharacteristic(Characteristic.On, value === 100);
+        .setCharacteristic(Characteristic.On, value != 0);
     }
   }
 
@@ -208,8 +211,11 @@ class ShadeAccessory {
   }
 
   setLevel(value) {
+    this.targetPosition = this.currentPosition = value;
     this.service
-      .setCharacteristic(Characteristic.currentPosition, value);
+      .setCharacteristic(Characteristic.CurrentPosition, value);
+    this.service
+      .setCharacteristic(Characteristic.TargetPosition, value);
   }
 
   getServices() {
