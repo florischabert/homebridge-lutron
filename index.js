@@ -117,7 +117,7 @@ class LightAccessory {
   }
 
   getPowerOn(cb) {
-    log(`Lutron device ${this.id} on is ${this.brightness != 0}`);    
+    this.log(`Lutron device ${this.id} on is ${this.brightness != 0}`);    
     cb(null, this.brightness != 0)
   }
 
@@ -134,7 +134,7 @@ class LightAccessory {
   }
 
   getBrightness(cb) {
-    log(`Lutron device ${this.id} brightness is ${this.brightness}`);    
+    this.log(`Lutron device ${this.id} brightness is ${this.brightness}`);    
     cb(null, this.brightness)
   }
 
