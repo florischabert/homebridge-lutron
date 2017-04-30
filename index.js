@@ -23,6 +23,8 @@ class LutronSerial {
     this.serial = serial;
 		  
     serial.open();
+    while(!serial.isOpen())
+      ;
 
     serial.on('data', (data) => {
       let split = data.toString('ascii').split(',');
