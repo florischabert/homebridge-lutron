@@ -22,9 +22,7 @@ class LutronSerial {
     this.platform = platform;
     this.serial = serial;
 		  
-    serial.on('open', () => {
-      log(`Opened ${port}`)
-    });
+    serial.open();
 
     serial.on('data', (data) => {
       let split = data.toString('ascii').split(',');
